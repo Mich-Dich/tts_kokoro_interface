@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# old stuff or large files
+OLD_**.*
+output/*
+*.onnx
+
 # C extensions
 *.so
 
