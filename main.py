@@ -2,6 +2,7 @@
 # TODO:
 #   add project system
 #   change window title to include project title
+#   When generating the sound, change the generation icon to a circle
 
 import threading
 import soundfile as sf
@@ -16,6 +17,7 @@ import pygame
 from widgets import TextBoxWidget
 
 import constants as const
+import project_manager
 
 # Ensure the config directory exists
 if not os.path.exists("config"):
@@ -35,39 +37,43 @@ ctk.set_appearance_mode("System")  # Modes: "System" (default), "Dark", "Light"
 ctk.set_default_color_theme("dark-blue")  # Themes: "blue" (default), "green", "dark-blue"
 
 # Global variable to store the current project directory
-current_project_directory = None
+# current_project_directory = None
+
 
 def save_data():
-    if current_project_directory is None:
+    if project_manager.current_project_directory is None:
         print("No project directory selected.")
         return
 
     data = []
     for child in scrollable_frame.winfo_children():
         if isinstance(child, ctk.CTkFrame):  # Check if it's a list container
-            section_title_entry = child.winfo_children()[0]  # First child is the section name entry
+            title_frame = child.winfo_children()[0]
+            section_title_entry = title_frame.winfo_children()[0]
             section_title = section_title_entry.get()
-            widgets_frame = child.winfo_children()[1]  # Second child is the widgets frame
+            widgets_frame = child.winfo_children()[1]
             texts = []
             for widget in widgets_frame.winfo_children():
                 if isinstance(widget, TextBoxWidget):
-                    text = widget.text_box.get("1.0", ctk.END).strip()                                  # Use "1.0" to "END" for multi-line text
+                    text = widget.text_box.get("1.0", ctk.END).strip()
                     texts.append(text)
 
             data.append({'name': section_title, 'widgets': texts})
 
-    with open(os.path.join(current_project_directory, 'data.json'), 'w') as f:                          # Save the data to the project directory
+    with open(os.path.join(project_manager.current_project_directory, 'data.json'), 'w') as f:
         json.dump(data, f)
 
     print("Data saved")
-    update_recent_projects(current_project_directory, os.path.basename(current_project_directory))      # Update the recent projects list
+    update_recent_projects(project_manager.current_project_directory, os.path.basename(project_manager.current_project_directory))
+
 
 def load_data():
-    if current_project_directory is None:
+    if project_manager.current_project_directory is None:
         print("No project directory selected.")
         return
 
-    with open(os.path.join(current_project_directory, 'data.json'), 'r') as f:                          # Load the data from the project directory
+    with open(os.path.join(project_manager.current_project_directory, 'data.json'), 'r') as f:                          # Load the data from the project directory
+        print(f"loading project and setting current_project_directory to: {project_manager.current_project_directory}")
         data = json.load(f)
 
     for child in scrollable_frame.winfo_children():                                                     # Clear existing list containers
@@ -136,7 +142,7 @@ combobox.set(const.DEFAULT_VOICE)  # Default text
 # Add a slider to the sidebar
 slider = ctk.CTkSlider(sidebar, from_=0.3, to=2.0, number_of_steps=17)
 slider.pack(pady=10, padx=10)
-slider.set(1.0)  # Default value
+slider.set(const.DEFAULT_SPEED)
 
 # Function to handle slider value changes
 def slider_changed(value):
@@ -187,8 +193,7 @@ def load_recent_projects():
 
 # Function to load a project from a directory
 def load_project(directory):
-    global current_project_directory
-    current_project_directory = directory
+    project_manager.current_project_directory = directory
     load_data()
     toggle_project_sidebar()
 

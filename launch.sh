@@ -14,7 +14,7 @@ fi
 
 # Run the ui.py script using uv
 echo "Starting the Kokoro Audio Generator..."
-uv run ui.py
+uv run main.py
 
 # Check if the script ran successfully
 if [ $? -eq 0 ]; then
