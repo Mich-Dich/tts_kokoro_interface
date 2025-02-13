@@ -8,6 +8,10 @@ OLD_**.*
 output/*
 *.onnx
 
+# Saved files
+*.json
+*.wav
+
 # C extensions
 *.so
 
