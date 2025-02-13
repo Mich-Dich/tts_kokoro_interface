@@ -18,30 +18,32 @@ This project extends the [Kokoro ONNX](https://github.com/thewh1teagle/kokoro-on
 
 ## Requirements
 
-Ensure you have the following dependencies installed:
+## Getting Started
+
+1. Clone this repo using
 
 ```bash
-uv pip install soundfile customtkinter pygame pillow
+git clone git@github.com:Mich-Dich/tts_kokoro_interface.git
 ```
 
-Additionally, the `kokoro-onnx` library and required model files should be available in the `src/` directory.
+2. Download the following files from [kokoro-onnx releases](https://github.com/thewh1teagle/kokoro-onnx/releases) and add them to the `tts_kokoro_interface/kokoro` dir:
+- kokoro-quant-gpu.onnx
+- kokoro-v1.0.fp16.onnx
+- kokoro-v1.0.int8.onnx
+- kokoro-v1.0.onnx
 
-## Installation
-
-To set up the environment and install dependencies, run:
+3. To set up the environment and install dependencies, run:
 
 ```bash
-bash setup.sh
+./setup.sh
 ```
-
-This script will install necessary dependencies and upgrade `kokoro-onnx`.
 
 ## Usage
 
 Run the application with:
 
 ```bash
-bash launch.sh
+./launch.sh
 ```
 
 This will ensure that `kokoro-onnx` is up to date before launching the GUI.

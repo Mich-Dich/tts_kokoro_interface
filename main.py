@@ -1,8 +1,6 @@
 
 # TODO:
-#   add project system
 #   change window title to include project title
-#   When generating the sound, change the generation icon to a circle
 
 import threading
 import soundfile as sf
