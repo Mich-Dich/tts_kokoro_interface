@@ -55,4 +55,3 @@ This will ensure that `kokoro-onnx` is up to date before launching the GUI.
 - add reorder functionalityAcknowledgments
 
 This project builds upon the [Kokoro ONNX](https://github.com/thewh1teagle/kokoro-onnx) TTS model.
-

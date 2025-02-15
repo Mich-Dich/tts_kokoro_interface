@@ -1,6 +1,9 @@
 
 # TODO:
 #   change window title to include project title
+#   buttons that list projects should be gray
+#   convert create_list_container to class and move to widgets.py
+
 
 import threading
 import soundfile as sf
