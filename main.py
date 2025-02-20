@@ -37,15 +37,7 @@ pygame.mixer.init()  # Initialize Pygame mixer
 ctk.set_appearance_mode("System")  # Modes: "System" (default), "Dark", "Light"
 ctk.set_default_color_theme("dark-blue")  # Themes: "blue" (default), "green", "dark-blue"
 
-# Global variable to store the current project directory
-# current_project_directory = None
-
-
-def save_data():
-    if project_manager.current_project_directory is None:
-        print("No project directory selected.")
-        return
-
+def get_data():
     data = []
     for child in scrollable_frame.winfo_children():
         if isinstance(child, ctk.CTkFrame):  # Check if it's a list container
@@ -60,56 +52,7 @@ def save_data():
                     texts.append(text)
 
             data.append({'name': section_title, 'widgets': texts})
-
-    with open(os.path.join(project_manager.current_project_directory, 'data.json'), 'w') as f:
-        json.dump(data, f)
-
-    print("Data saved")
-    update_recent_projects(project_manager.current_project_directory, os.path.basename(project_manager.current_project_directory))
-
-
-def load_data():
-    if project_manager.current_project_directory is None:
-        print("No project directory selected.")
-        return
-
-    with open(os.path.join(project_manager.current_project_directory, 'data.json'), 'r') as f:                          # Load the data from the project directory
-        print(f"loading project and setting current_project_directory to: {project_manager.current_project_directory}")
-        data = json.load(f)
-
-    for child in scrollable_frame.winfo_children():                                                     # Clear existing list containers
-        if isinstance(child, ctk.CTkFrame):
-            child.destroy()                                                                             # Remove the list container
-
-    for section in data:
-        section_title = section['name']
-        texts = section['widgets']
-        create_list_container(title=section_title)                                                      # Create the list container with the section name
-        widgets_frame = scrollable_frame.winfo_children()[-1].winfo_children()[1]                       # Last child is the new list container
-
-        for text in texts:
-            new_widget = TextBoxWidget(widgets_frame)                                                   # Create a new TextBoxWidget
-            new_widget.text_box.insert("1.0", text)                                                     # Insert text into the CTkTextbox
-            new_widget.pack(fill="x", pady=5, padx=10)                                                  # Pack the widget to make it visible
-
-# Function to update the recent projects list
-def update_recent_projects(directory, name):
-    with open("config/recent_projects.json", "r") as f:
-        recent_projects = json.load(f)
-
-    for project in recent_projects:                                                                     # Check if the project is already in the list
-        if project["directory"] == directory:
-            return
-
-    recent_projects.append({"name": name, "directory": directory})
-    if len(recent_projects) > 5:
-        recent_projects = recent_projects[-5:]
-
-    with open("config/recent_projects.json", "w") as f:                                                 # Save the updated list
-        json.dump(recent_projects, f)
-
-    load_recent_projects()
-
+    return data
 
 # Create the main window
 app = ctk.CTk()
@@ -169,59 +112,6 @@ project_sidebar = ctk.CTkFrame(app, width=200, corner_radius=0)
 project_sidebar_label = ctk.CTkLabel(project_sidebar, text="Recent Projects", font=("Arial", 16))
 project_sidebar_label.pack(pady=20, padx=10)
 
-# Function to load recent projects into the sidebar
-def load_recent_projects():
-    with open("config/recent_projects.json", "r") as f:
-        recent_projects = json.load(f)
-
-    # Clear existing project buttons
-    for widget in project_sidebar.winfo_children():
-        if isinstance(widget, ctk.CTkButton):
-            widget.destroy()
-
-    # Add buttons for each recent project
-    for project in recent_projects:
-        project_button = ctk.CTkButton(
-            project_sidebar, text=project["name"], command=lambda p=project: load_project(p["directory"])
-        )
-        project_button.pack(pady=5, padx=10)
-
-    # Add a "Browse" button to load a project from a directory
-    browse_button = ctk.CTkButton(
-        project_sidebar, text="Browse", command=browse_project
-    )
-    browse_button.pack(pady=10, padx=10)
-
-# Function to load a project from a directory
-def load_project(directory):
-    project_manager.current_project_directory = directory
-    load_data()
-    toggle_project_sidebar()
-
-# Function to browse for a project directory
-def browse_project():
-    directory = ctk.filedialog.askdirectory()
-    if directory:
-        load_project(directory)
-
-
-
-# Create a frame for the buttons at the bottom-left
-button_frame = ctk.CTkFrame(app, fg_color="transparent")
-button_frame.pack(side="left", anchor="sw", padx=5, pady=5)
-
-# save button
-save_button = ctk.CTkButton( button_frame, text="", image=const.ICONS['save'], width=30, height=30, corner_radius=4, command=save_data )
-save_button.pack(pady=5)
-
-# load button
-load_button = ctk.CTkButton( button_frame, text="", image=const.ICONS['load'], width=30, height=30, corner_radius=4, command=toggle_project_sidebar )
-load_button.pack(pady=5)
-
-# settings button
-toggle_button = ctk.CTkButton( button_frame, text="", image=const.ICONS['settings'], width=30, height=30, corner_radius=4, command=toggle_sidebar)
-toggle_button.pack(pady=5)
-
 # Create a scrollable frame for the lists
 scrollable_frame = ctk.CTkScrollableFrame(app)
 scrollable_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
@@ -231,6 +121,23 @@ def on_mouse_wheel(event):
 
 app.bind_all("<Button-4>", lambda e: scrollable_frame._parent_canvas.yview_scroll(-1, "units"))  # Up
 app.bind_all("<Button-5>", lambda e: scrollable_frame._parent_canvas.yview_scroll(1, "units"))  # Down
+
+
+# Create a frame for the buttons at the bottom-left
+button_frame = ctk.CTkFrame(app, fg_color="transparent")
+button_frame.pack(side="left", anchor="sw", padx=5, pady=5)
+
+# save button
+save_button = ctk.CTkButton( button_frame, text="", image=const.ICONS['save'], width=30, height=30, corner_radius=4, command=project_manager.save_project_data(get_data()) )
+save_button.pack(pady=5)
+
+# load button
+load_button = ctk.CTkButton( button_frame, text="", image=const.ICONS['load'], width=30, height=30, corner_radius=4, command=toggle_project_sidebar )
+load_button.pack(pady=5)
+
+# settings button
+toggle_button = ctk.CTkButton( button_frame, text="", image=const.ICONS['settings'], width=30, height=30, corner_radius=4, command=toggle_sidebar)
+toggle_button.pack(pady=5)
 
 # Function to extract the number at the end of a string
 def extract_trailing_number(s):
@@ -277,7 +184,15 @@ def update_all_list_button_visibility():
         if isinstance(widget, ctk.CTkFrame):
             update_list_button_visibility(widget)
 
-
+# Function to add a new TextBoxWidget to a list
+def add_widget(widgets_frame):
+    new_widget = TextBoxWidget(widgets_frame)
+    new_widget.pack(fill="x", pady=5, padx=10)
+    
+    # Update button visibility for all widgets in the list
+    for widget in widgets_frame.pack_slaves():
+        if isinstance(widget, TextBoxWidget):
+            widget.update_button_visibility()
 
 def create_list_container(title=None):
     list_containers = scrollable_frame.winfo_children()
@@ -326,18 +241,8 @@ def create_list_container(title=None):
     button_container = ctk.CTkFrame(list_container, fg_color="transparent")
     button_container.pack(fill="x", pady=5, padx=10)
 
-    # Function to add a new TextBoxWidget to this list
-    def add_widget():
-        new_widget = TextBoxWidget(widgets_frame)
-        new_widget.pack(fill="x", pady=5, padx=10)
-        
-        # Update button visibility for all widgets in the list
-        for widget in widgets_frame.pack_slaves():
-            if isinstance(widget, TextBoxWidget):
-                widget.update_button_visibility()
-
     # Add a button to create new widgets in this list
-    add_button = ctk.CTkButton(button_container, text="Add Item", command=add_widget)
+    add_button = ctk.CTkButton(button_container, text="Add Item", command=lambda: add_widget(widgets_frame))
     add_button.pack(side="left", padx=5)
 
     # Add a button to remove this list
@@ -366,13 +271,46 @@ def create_list_container(title=None):
             widgets_frame.pack(fill="x", pady=5, padx=10)
             button_container.pack(fill="x", pady=5, padx=10)
 
-    update_list_button_visibility(list_container)                                                   # Update button visibility for the list
-    update_all_list_button_visibility()                                                             # Update button visibility for all lists after creating a new one
+    update_list_button_visibility(list_container)                                                       # Update button visibility for the list
+    update_all_list_button_visibility()                                                                 # Update button visibility for all lists after creating a new one
+
+def update_ui_with_project_data(data):
+    # Clear the current UI
+    for widget in scrollable_frame.winfo_children():
+        if isinstance(widget, ctk.CTkFrame):
+            widget.destroy()
+
+    # Populate the UI with the loaded data
+    for section in data:
+        create_list_container(section['name'])
+        for text in section['widgets']:
+            widgets_frame = scrollable_frame.winfo_children()[-1].winfo_children()[1]
+            add_widget(widgets_frame)
+            text_widget = widgets_frame.winfo_children()[-1]
+            text_widget.text_box.insert("1.0", text)
 
 # Add a button to create new lists
 add_section_button = ctk.CTkButton(scrollable_frame, text="Add Section", command=create_list_container)
 add_section_button.pack(pady=10)
 
-load_recent_projects()                                                                              # Initialize the recent projects sidebar
+# Initialize the recent projects sidebar
+for widget in project_sidebar.winfo_children():                                                         # Clear existing project buttons
+    if isinstance(widget, ctk.CTkButton):
+        widget.destroy()
+
+project_names = [project["name"] for project in project_manager.recent_projects]                        # Create a list of project names
+project_menu = ctk.CTkOptionMenu(                                                                       # Add a CTkOptionMenu to the project sidebar
+    project_sidebar,
+    values=project_names,
+    command=lambda selected_project: update_ui_with_project_data(project_manager.load_project_by_name(selected_project)),
+    fg_color="gray",
+    button_color="gray",
+    dropdown_fg_color="gray",
+    dropdown_hover_color="lightgray",
+)
+project_menu.pack(pady=10, padx=10)
+
+browse_button = ctk.CTkButton(project_sidebar, text="Browse", command=project_manager.browse_project)   # Add a "Browse" button to load a project from a directory
+browse_button.pack(pady=10, padx=10)
 
 app.mainloop()                                                                                      # Run the application

@@ -45,8 +45,7 @@ class TextBoxWidget(ctk.CTkFrame):
         self.up_button = ctk.CTkButton(self.up_down_frame, text="", image=const.ICONS['up'], width=20, height=20, corner_radius=4, command=self.on_up)
         self.up_button.pack(side="top", pady=1)
 
-        self.down_button = ctk.CTkButton(self.up_down_frame, text="", image=const.ICONS['down'], width=20, height=20, corner_radius=4, command=self.on_down
-        )
+        self.down_button = ctk.CTkButton(self.up_down_frame, text="", image=const.ICONS['down'], width=20, height=20, corner_radius=4, command=self.on_down)
         self.down_button.pack(side="top", pady=1)
 
         self.after(10, self.update_button_visibility)                                   # Defer the button visibility update until after the widget is packed
