@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from constants import CONFIG_DIR, OUTPUT_DIR
+import constants as const
 
 current_project_directory = None
 recent_projects = None
@@ -17,7 +18,7 @@ def save_project_data(data):                                                    
         print("No project directory selected.")
         return
 
-    with open(os.path.join(current_project_directory, 'data.json'), 'w') as f:
+    with open(os.path.join(current_project_directory, 'tts_kokoro.json'), 'w') as f:
         json.dump(data, f)
 
     print("Data saved")
@@ -28,12 +29,12 @@ def load_project_data(directory):                                               
         print("No project directory selected.")
         return None
 
-    with open(os.path.join(directory, 'data.json'), 'r') as f:
+    with open(os.path.join(directory, 'tts_kokoro.json'), 'r') as f:
         data = json.load(f)
     return data
 
 def update_recent_projects(directory, name):                                    # Update the list of recent projects
-    recent_projects_file = CONFIG_DIR / "recent_projects.json"
+    recent_projects_file = const.CONFIG_FILE
     if not recent_projects_file.exists():
         with open(recent_projects_file, 'w') as f:
             json.dump([], f)
@@ -54,7 +55,7 @@ def update_recent_projects(directory, name):                                    
         json.dump(recent_projects, f)
 
 def get_recent_projects():                                                      # Get the list of recent projects
-    recent_projects_file = CONFIG_DIR / "recent_projects.json"
+    recent_projects_file = const.CONFIG_FILE
     if not recent_projects_file.exists():
         return []
 
@@ -81,6 +82,32 @@ def browse_project():                                                           
         return directory
     return None
 
+def create_new_project():
+    import customtkinter as ctk
+    from tkinter import messagebox
+    directory = ctk.filedialog.askdirectory(title="Select Directory for New Project")
+    if not directory:
+        return None
+    
+    global current_project_directory
+    current_project_directory = directory  # <-- ADD THIS
 
+    # Create project directory and data.json
+    os.makedirs(directory, exist_ok=True)
+    data_path = os.path.join(directory, 'tts_kokoro.json')
+    if not os.path.exists(data_path):
+        with open(data_path, 'w') as f:
+            json.dump([], f)
+    
+    # Update recent projects
+    project_name = os.path.basename(directory)
+    update_recent_projects(directory, project_name)
+    
+    # Refresh recent projects list
+    global recent_projects
+    recent_projects = get_recent_projects()
+    
+    messagebox.showinfo("Success", f"Project created: {project_name}")
+    return directory
 
 recent_projects = get_recent_projects()

@@ -33,7 +33,7 @@ class ProjectSidebar:
         self._load_recent_projects()
 
     def _load_recent_projects(self):
-        with open("config/recent_projects.json", "r") as f:
+        with open(const.CONFIG_FILE, "r") as f:
             recent_projects = json.load(f)
 
         # Clear existing project buttons

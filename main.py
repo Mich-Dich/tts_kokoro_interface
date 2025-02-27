@@ -15,18 +15,19 @@ import json
 import re
 import time
 import pygame
-from widgets import TextBoxWidget
 
+import audio_handler
+from widgets import TextBoxWidget
 import constants as const
 import project_manager
 
 # Ensure the config directory exists
-if not os.path.exists("config"):
-    os.makedirs("config")
+if not os.path.exists(const.CONFIG_DIR):
+    os.makedirs(const.CONFIG_DIR)
 
-# Create the recent_projects.json file if it doesn't exist
-if not os.path.exists("config/recent_projects.json"):
-    with open("config/recent_projects.json", "w") as f:
+# Create the config.json file if it doesn't exist
+if not os.path.exists(const.CONFIG_FILE):
+    with open(const.CONFIG_FILE, "w") as f:
         json.dump([], f)
 
 is_playing = False  # Flag to track if audio is playing
@@ -79,12 +80,12 @@ sidebar_label = ctk.CTkLabel(sidebar, text="Settings", font=("Arial", 16))
 sidebar_label.pack(pady=20, padx=10)
 
 # Add a dropdown (combobox) to the sidebar
-combobox = ctk.CTkComboBox(sidebar, values=const.VOICES)
+combobox = ctk.CTkComboBox(sidebar, values=const.VOICES, command=lambda value: audio_handler.update_selected_voice(value))
 combobox.pack(pady=10, padx=10)
-combobox.set(const.DEFAULT_VOICE)  # Default text
+combobox.set(const.DEFAULT_VOICE)
 
 # Add a slider to the sidebar
-slider = ctk.CTkSlider(sidebar, from_=0.3, to=2.0, number_of_steps=17)
+slider = ctk.CTkSlider(sidebar, from_=0.3, to=2.0, number_of_steps=34, command=lambda value: audio_handler.update_voice_speed(value))
 slider.pack(pady=10, padx=10)
 slider.set(const.DEFAULT_SPEED)
 
@@ -128,7 +129,7 @@ button_frame = ctk.CTkFrame(app, fg_color="transparent")
 button_frame.pack(side="left", anchor="sw", padx=5, pady=5)
 
 # save button
-save_button = ctk.CTkButton( button_frame, text="", image=const.ICONS['save'], width=30, height=30, corner_radius=4, command=project_manager.save_project_data(get_data()) )
+save_button = ctk.CTkButton(button_frame, text="", image=const.ICONS['save'], width=30, height=30, corner_radius=4, command=lambda: project_manager.save_project_data(get_data()))
 save_button.pack(pady=5)
 
 # load button
@@ -188,9 +189,7 @@ def update_all_list_button_visibility():
 def add_widget(widgets_frame):
     new_widget = TextBoxWidget(widgets_frame)
     new_widget.pack(fill="x", pady=5, padx=10)
-    
-    # Update button visibility for all widgets in the list
-    for widget in widgets_frame.pack_slaves():
+    for widget in widgets_frame.pack_slaves():                      # Update button visibility for all widgets in the list
         if isinstance(widget, TextBoxWidget):
             widget.update_button_visibility()
 
@@ -299,18 +298,29 @@ for widget in project_sidebar.winfo_children():                                 
         widget.destroy()
 
 project_names = [project["name"] for project in project_manager.recent_projects]                        # Create a list of project names
-project_menu = ctk.CTkOptionMenu(                                                                       # Add a CTkOptionMenu to the project sidebar
-    project_sidebar,
-    values=project_names,
-    command=lambda selected_project: update_ui_with_project_data(project_manager.load_project_by_name(selected_project)),
-    fg_color="gray",
-    button_color="gray",
-    dropdown_fg_color="gray",
-    dropdown_hover_color="lightgray",
+project_menu = ctk.CTkOptionMenu(project_sidebar, values=project_names, command=lambda selected_project: update_ui_with_project_data(project_manager.load_project_by_name(selected_project)),
+    fg_color="gray", button_color="gray", dropdown_fg_color="gray", dropdown_hover_color="lightgray",
 )
 project_menu.pack(pady=10, padx=10)
 
-browse_button = ctk.CTkButton(project_sidebar, text="Browse", command=project_manager.browse_project)   # Add a "Browse" button to load a project from a directory
+# Existing browse button - update command to include refresh
+browse_button = ctk.CTkButton(
+    project_sidebar, 
+    text="Browse", 
+    command=lambda: [
+        project_manager.browse_project(),
+        project_menu.configure(values=[p["name"] for p in project_manager.recent_projects])
+    ]
+)
 browse_button.pack(pady=10, padx=10)
+
+# Add "Create New" button to project sidebar
+create_new_btn = ctk.CTkButton(project_sidebar, text="Create New", 
+    command=lambda: [
+        project_manager.create_new_project(),
+        project_menu.configure(values=[p["name"] for p in project_manager.recent_projects])
+    ]
+)
+create_new_btn.pack(pady=10, padx=10)
 
 app.mainloop()                                                                                      # Run the application

@@ -10,7 +10,7 @@ CONFIG_DIR =    BASE_DIR / "config"
 MODEL_PATH =    BASE_DIR / "kokoro" / "kokoro-v1.0.onnx"
 VOICES_PATH =   BASE_DIR / "kokoro" / "voices-v1.0.bin"
 
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "generated_audio"
 
 # Voices
 VOICES = [
@@ -45,5 +45,4 @@ ICONS = {
 }
 
 # Project config
-RECENT_PROJECTS_FILE = CONFIG_DIR / "recent_projects.json"
-
+CONFIG_FILE = CONFIG_DIR / "config.json"

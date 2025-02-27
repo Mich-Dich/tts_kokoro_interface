@@ -8,6 +8,7 @@ import time
 import pygame
 import constants as const
 import project_manager
+import audio_handler
 
 kokoro = Kokoro("kokoro/kokoro-v1.0.onnx", "kokoro/voices-v1.0.bin")  # Initialize Kokoro with GPU
 pygame.mixer.init()  # Initialize Pygame mixer
@@ -16,15 +17,15 @@ class TextBoxWidget(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        self.pack_propagate(False)                                                      # Prevent the frame from shrinking to fit its children
+        self.pack_propagate(False)  # Prevent the frame from shrinking to fit its children
 
-        self.text_box = ctk.CTkTextbox(self, wrap="word")                               # Add a multi-line text box (CTkTextbox) to the widget
-        self.text_box.pack(pady=5, padx=10, fill="both", expand=True)                   # Allow the text box to expand
+        self.text_box = ctk.CTkTextbox(self, wrap="word", activate_scrollbars=False)  # Add a multi-line text box (CTkTextbox) to the widget
+        self.text_box.pack(pady=5, padx=10, fill="both", expand=True)  # Allow the text box to expand
         self.text_box.bind("<KeyRelease>", self.adjust_textbox_height)
 
-        self.adjust_textbox_height()                                                    # Initial height adjustment
+        self.adjust_textbox_height()  # Initial height adjustment
 
-        self.button_frame = ctk.CTkFrame(self, fg_color="transparent")                  # Create a frame to hold the buttons
+        self.button_frame = ctk.CTkFrame(self, fg_color="transparent")  # Create a frame to hold the buttons
         self.button_frame.pack(pady=5, padx=10, fill="x")
 
         self.generate_button = ctk.CTkButton(self.button_frame, text="", image=const.ICONS['generate'], width=30, height=30, corner_radius=4, command=self.on_generate)
@@ -33,12 +34,12 @@ class TextBoxWidget(ctk.CTkFrame):
         self.play_button = ctk.CTkButton(self.button_frame, text="", image=const.ICONS['play'], width=30, height=30, corner_radius=4, command=self.on_play)
         self.play_button.pack(side="left", padx=5)
 
-        right_buttons_frame = ctk.CTkFrame(self.button_frame, fg_color="transparent")   # Right-side buttons (remove + vertical up/down)
+        right_buttons_frame = ctk.CTkFrame(self.button_frame, fg_color="transparent")  # Right-side buttons (remove + vertical up/down)
         right_buttons_frame.pack(side="right")
 
         self.remove_button = ctk.CTkButton(right_buttons_frame, text="", image=const.ICONS['remove'], width=30, height=30, corner_radius=4, command=self.on_remove)
         self.remove_button.pack(side="right", padx=5)
-        
+
         self.up_down_frame = ctk.CTkFrame(right_buttons_frame, fg_color="transparent")  # Vertical frame for up/down buttons (half size)
         self.up_down_frame.pack(side="right", padx=5)
 
@@ -48,16 +49,16 @@ class TextBoxWidget(ctk.CTkFrame):
         self.down_button = ctk.CTkButton(self.up_down_frame, text="", image=const.ICONS['down'], width=20, height=20, corner_radius=4, command=self.on_down)
         self.down_button.pack(side="top", pady=1)
 
-        self.after(10, self.update_button_visibility)                                   # Defer the button visibility update until after the widget is packed
+        self.after(10, self.update_button_visibility)                               # Defer the button visibility update until after the widget is packed
 
-    def adjust_textbox_height(self, event=None):                                        # Function to adjust the height of the text box based on the number of lines
-        text = self.text_box.get("1.0", "end-1c")                                       # Get all text except the last newline
-        line_count = text.count("\n") + 1                                               # Count newlines and add 1 for the last line
+    def adjust_textbox_height(self, event=None):                                    # Function to adjust the height of the text box based on the number of lines
+        text = self.text_box.get("1.0", "end-1c")
+        line_count = text.count("\n") + 1
         min_height = 1
-        max_height = 10
-        new_height = min(max(line_count, min_height), max_height)
+        new_height = max(line_count, min_height)  # No max_height limit
         self.text_box.configure(height=new_height)
-        self.configure(height=new_height * 20 + 100)  # Adjust this formula as needed
+        # Adjust parent frame height (modify multiplier as needed)
+        self.configure(height=new_height * 20 + 100)
 
     # Function to handle "generate" button click
     def on_generate(self):
@@ -69,29 +70,8 @@ class TextBoxWidget(ctk.CTkFrame):
         section_title = title_entry.get()
         widget_index = widgets_frame.winfo_children().index(self)
         filename = f"{section_title}_{widget_index}"
-        print(f"current_project_directory: {project_manager.current_project_directory}")
-
-        # Start a new thread for audio generation
-        threading.Thread(target=self.generate_audio_thread, args=(text, filename), daemon=True).start()
-
-    # Function to handle audio generation in a separate thread
-    def generate_audio_thread(self, text, filename):
-        try:
-            start_time = time.time()  # Start the timer
-            samples, sample_rate = kokoro.create(text, voice="af_alloy", speed=1.2, lang="en-us")  # Default voice and speed
-
-            # Use the current project directory to save the .wav file
-            if project_manager.current_project_directory:
-                output_path = os.path.join(project_manager.current_project_directory, const.OUTPUT_DIR, f"{filename}.wav")
-            else:
-                output_path = os.path.join(const.OUTPUT_DIR, f"{filename}.wav")
-
-            sf.write(output_path, samples, sample_rate)
-            generation_time = time.time() - start_time
-            print(f"Audio generated successfully as {filename}.wav [Time: {generation_time:.2f}s]")
-
-        except Exception as e:
-            print(f"Error generating audio: {e}")
+        print(f"on_generate - filename: {filename}")
+        audio_handler.generate_audio(text, filename)
 
     # Function to handle "play" button click
     def on_play(self):
@@ -103,9 +83,11 @@ class TextBoxWidget(ctk.CTkFrame):
         widget_index = widgets_frame.winfo_children().index(self)
         filename = f"{section_title}_{widget_index}"
 
+        audio_handler.play_audio(filename)
+
         # Use the current project directory to locate the .wav file
         if project_manager.current_project_directory:
-            output_path = os.path.join(project_manager.current_project_directory, f"{filename}.wav")
+            output_path = os.path.join(project_manager.current_project_directory, const.OUTPUT_DIR, f"{filename}.wav")
         else:
             output_path = os.path.join(const.OUTPUT_DIR, f"{filename}.wav")
 
